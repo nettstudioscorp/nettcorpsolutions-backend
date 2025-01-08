@@ -1,4 +1,5 @@
-const router = require("express").Router();
+const express = require("express");
+const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../user/User");
@@ -110,6 +111,53 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Erro no servidor");
+  }
+});
+
+router.put("/forgot-password", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        message: "Email e nova senha são obrigatórios",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "A senha deve ter pelo menos 6 caracteres",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const user = await User.findOneAndUpdate(
+      { email },
+      {
+        $set: {
+          password: hashedPassword,
+          updatedAt: Date.now(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuário não encontrado",
+      });
+    }
+
+    res.status(200).json({
+      message: "Senha atualizada com sucesso",
+    });
+  } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+    res.status(500).json({
+      message: "Erro ao redefinir senha",
+    });
   }
 });
 
