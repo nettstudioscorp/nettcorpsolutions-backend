@@ -39,11 +39,11 @@ const userSchema = new mongoose.Schema(
     },
     aceitouTermos: {
       type: Boolean,
-      default: false,
+      default: true,
     },
-    autorizouImagem: {
+    autorizouArmazenamentoDeDados: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     createdAt: {
       type: Date,

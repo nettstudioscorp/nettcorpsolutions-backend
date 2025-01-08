@@ -17,10 +17,9 @@ router.post("/register", async (req, res) => {
       endereco,
       telefone,
       aceitouTermos,
-      autorizouImagem,
+      autorizouArmazenamentoDeDados,
     } = req.body;
 
-    // Validação dos campos obrigatórios
     if (!name || !email || !password || !tipoPessoa || !cpfCnpj || !telefone) {
       console.log("Campos faltando:", {
         name,
@@ -49,7 +48,7 @@ router.post("/register", async (req, res) => {
       endereco,
       telefone,
       aceitouTermos,
-      autorizouImagem,
+      autorizouArmazenamentoDeDados,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -98,12 +97,12 @@ router.post("/login", async (req, res) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "Credenciais inválidas" });
+      return res.status(400).json({ message: "Email não cadastrado" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Credenciais inválidas" });
+      return res.status(400).json({ message: "Senha incorreta" });
     }
 
     const payload = {
@@ -130,13 +129,15 @@ router.post("/login", async (req, res) => {
     );
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Erro no servidor");
+    res.status(500).json({ message: "Erro no servidor" });
   }
 });
 
 router.put("/forgot-password", async (req, res) => {
   try {
     const { email, newPassword } = req.body;
+
+    console.log("Dados recebidos:", { email, newPassword: "***" });
 
     if (!email || !newPassword) {
       return res.status(400).json({
@@ -150,25 +151,19 @@ router.put("/forgot-password", async (req, res) => {
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    const user = await User.findOneAndUpdate(
-      { email },
-      {
-        $set: {
-          password: hashedPassword,
-          updatedAt: Date.now(),
-        },
-      },
-      { new: true }
-    );
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
         message: "Usuário não encontrado",
       });
     }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
 
     res.status(200).json({
       message: "Senha atualizada com sucesso",
@@ -177,6 +172,7 @@ router.put("/forgot-password", async (req, res) => {
     console.error("Erro ao redefinir senha:", error);
     res.status(500).json({
       message: "Erro ao redefinir senha",
+      error: error.message,
     });
   }
 });
