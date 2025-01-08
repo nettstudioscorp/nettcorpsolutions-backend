@@ -5,36 +5,38 @@ require("dotenv").config();
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Rota raiz
 app.get("/", (req, res) => {
   res.json({ message: "Api NettCorpSolutions 🚀" });
 });
 
-// Conectar ao MongoDB
+console.log(
+  "Tentando conectar ao MongoDB com URI:",
+  process.env.MONGODB_URI.replace(/:[^:/@]+@/, ":****@")
+);
+
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("Conectado ao MongoDB com sucesso!");
+    console.log("Nome do banco de dados:", mongoose.connection.name);
   })
-  .then(() => console.log("Conectado ao MongoDB"))
   .catch((err) => {
-    console.error("Erro ao conectar ao MongoDB:", err);
+    console.error("Erro ao conectar ao MongoDB:");
+    console.error("Detalhes do erro:", err);
     process.exit(1);
   });
 
-// Rotas
 app.use("/api/auth", require("./auth/auth"));
 app.use("/api/users", require("./user/user.routes"));
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // URL do seu frontend
-    methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
-    allowedHeaders: ["Content-Type", "Authorization"], // Cabeçalhos permitidos
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 

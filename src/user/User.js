@@ -15,13 +15,42 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    tipoPessoa: {
+      type: String,
+      enum: ["fisica", "juridica"],
+      required: true,
+    },
+    cpfCnpj: {
+      type: String,
+      required: true,
+    },
+    endereco: {
+      cep: String,
+      logradouro: String,
+      numero: String,
+      bairro: String,
+      cidade: String,
+      estado: String,
+      nome: String,
+    },
+    telefone: {
+      type: String,
+      required: true,
+    },
+    aceitouTermos: {
+      type: Boolean,
+      default: false,
+    },
+    autorizouImagem: {
+      type: Boolean,
+      default: false,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
     },
   },
   {
-    // Especifica a collection exata que queremos usar
     collection: "users",
   }
 );
