@@ -6,6 +6,8 @@ const User = require("../user/User");
 
 router.post("/register", async (req, res) => {
   try {
+    console.log("Dados recebidos:", req.body);
+
     const {
       name,
       email,
@@ -17,6 +19,21 @@ router.post("/register", async (req, res) => {
       aceitouTermos,
       autorizouImagem,
     } = req.body;
+
+    // Validação dos campos obrigatórios
+    if (!name || !email || !password || !tipoPessoa || !cpfCnpj || !telefone) {
+      console.log("Campos faltando:", {
+        name,
+        email,
+        password,
+        tipoPessoa,
+        cpfCnpj,
+        telefone,
+      });
+      return res.status(400).json({
+        message: "Todos os campos obrigatórios devem ser preenchidos",
+      });
+    }
 
     let user = await User.findOne({ email });
     if (user) {
@@ -67,8 +84,11 @@ router.post("/register", async (req, res) => {
       }
     );
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Erro no servidor");
+    console.error("Erro no registro:", err);
+    res.status(500).json({
+      message: "Erro ao criar usuário",
+      error: err.message,
+    });
   }
 });
 
