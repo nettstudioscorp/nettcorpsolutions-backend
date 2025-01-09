@@ -21,16 +21,17 @@ app.use("/api/services", serviceRoutes);
 const contatoRoutes = require("./contato/contato.routes");
 app.use("/api/contato", contatoRoutes);
 
-// ... código existente ...
 const faleConoscoRoutes = require("./faleconosco/faleConosco.routes");
 app.use("/api/faleconosco", faleConoscoRoutes);
-// ... resto do código ...
+
+const blogRoutes = require("./blog/blog.routes");
+app.use("/api/blog", blogRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    dbName: "nettcorpdatabase", // Força o uso deste nome de banco de dados
+    dbName: "nettcorpdatabase",
   })
   .then(() => {
     console.log("Conectado ao MongoDB - Database: nettcorpdatabase");
