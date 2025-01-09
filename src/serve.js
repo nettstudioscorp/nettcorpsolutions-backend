@@ -30,6 +30,9 @@ app.use("/api/blog", blogRoutes);
 const authRoutes = require("./auth/auth");
 app.use("/api/auth", authRoutes);
 
+const andamentoRoutes = require("./andamento/andamento.routes");
+app.use("/api/andamento", andamentoRoutes);
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
