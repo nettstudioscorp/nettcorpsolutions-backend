@@ -27,6 +27,9 @@ app.use("/api/faleconosco", faleConoscoRoutes);
 const blogRoutes = require("./blog/blog.routes");
 app.use("/api/blog", blogRoutes);
 
+const authRoutes = require("./auth/auth");
+app.use("/api/auth", authRoutes);
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -40,8 +43,6 @@ mongoose
   .catch((err) => {
     console.error("Erro ao conectar ao MongoDB:", err);
   });
-const authRoutes = require("./auth/auth");
-app.use("/api/auth", authRoutes);
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);

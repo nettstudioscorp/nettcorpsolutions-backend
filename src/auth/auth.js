@@ -4,10 +4,67 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../user/User");
 
+const authMiddleware = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Token não fornecido" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.user.id;
+    next();
+  } catch (error) {
+    console.error("Erro de autenticação:", error);
+    res.status(401).json({ message: "Token inválido" });
+  }
+};
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Email não cadastrado" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Senha incorreta" });
+    }
+
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+      (err, token) => {
+        if (err) throw err;
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            telefone: user.telefone,
+          },
+        });
+      }
+    );
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Erro no servidor" });
+  }
+});
+
 router.post("/register", async (req, res) => {
   try {
-    console.log("Dados recebidos:", req.body);
-
     const {
       name,
       email,
@@ -19,20 +76,6 @@ router.post("/register", async (req, res) => {
       aceitouTermos,
       autorizouArmazenamentoDeDados,
     } = req.body;
-
-    if (!name || !email || !password || !tipoPessoa || !cpfCnpj || !telefone) {
-      console.log("Campos faltando:", {
-        name,
-        email,
-        password,
-        tipoPessoa,
-        cpfCnpj,
-        telefone,
-      });
-      return res.status(400).json({
-        message: "Todos os campos obrigatórios devem ser preenchidos",
-      });
-    }
 
     let user = await User.findOne({ email });
     if (user) {
@@ -74,62 +117,59 @@ router.post("/register", async (req, res) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            tipoPessoa: user.tipoPessoa,
-            cpfCnpj: user.cpfCnpj,
-            endereco: user.endereco,
             telefone: user.telefone,
           },
         });
       }
     );
-  } catch (err) {
-    console.error("Erro no registro:", err);
+  } catch (error) {
+    console.error("Erro no registro:", error);
     res.status(500).json({
       message: "Erro ao criar usuário",
-      error: err.message,
+      error: error.message,
     });
   }
 });
 
-router.post("/login", async (req, res) => {
+router.put("/update", authMiddleware, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const userId = req.userId;
+    console.log("ID do usuário:", userId);
+    console.log("Dados recebidos:", req.body);
 
-    let user = await User.findOne({ email });
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(400).json({ message: "Email não cadastrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Senha incorreta" });
+    const { name, email, telefone, password } = req.body;
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (telefone) user.telefone = telefone;
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
     }
 
-    const payload = {
-      user: {
-        id: user.id,
-      },
-    };
+    await user.save();
 
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
-        res.json({
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          },
-        });
-      }
-    );
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: "Erro no servidor" });
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    console.log("Usuário atualizado:", userResponse);
+
+    res.json({
+      message: "Dados atualizados com sucesso",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    res.status(500).json({
+      message: "Erro ao atualizar dados",
+      error: error.message,
+    });
   }
 });
 
@@ -137,22 +177,13 @@ router.put("/forgot-password", async (req, res) => {
   try {
     const { email, newPassword } = req.body;
 
-    console.log("Dados recebidos:", { email, newPassword: "***" });
-
     if (!email || !newPassword) {
       return res.status(400).json({
         message: "Email e nova senha são obrigatórios",
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        message: "A senha deve ter pelo menos 6 caracteres",
-      });
-    }
-
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(404).json({
         message: "Usuário não encontrado",
@@ -160,12 +191,10 @@ router.put("/forgot-password", async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
-    res.status(200).json({
+    res.json({
       message: "Senha atualizada com sucesso",
     });
   } catch (error) {
