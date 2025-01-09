@@ -15,14 +15,30 @@ app.get("/", (req, res) => {
   res.json({ message: "Api NettCorpSolutions 🚀" });
 });
 
+const serviceRoutes = require("./service/service.routes");
+app.use("/api/services", serviceRoutes);
+
+const contatoRoutes = require("./contato/contato.routes");
+app.use("/api/contato", contatoRoutes);
+
+// ... código existente ...
+const faleConoscoRoutes = require("./faleconosco/faleConosco.routes");
+app.use("/api/faleconosco", faleConoscoRoutes);
+// ... resto do código ...
+
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    dbName: "nettcorpdatabase", // Força o uso deste nome de banco de dados
   })
-  .then(() => console.log("Conectado ao MongoDB"))
-  .catch((err) => console.error("Erro ao conectar ao MongoDB:", err));
-
+  .then(() => {
+    console.log("Conectado ao MongoDB - Database: nettcorpdatabase");
+    console.log("URI:", process.env.MONGODB_URI);
+  })
+  .catch((err) => {
+    console.error("Erro ao conectar ao MongoDB:", err);
+  });
 const authRoutes = require("./auth/auth");
 app.use("/api/auth", authRoutes);
 
