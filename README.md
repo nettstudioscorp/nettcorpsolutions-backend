@@ -1,5 +1,8 @@
 # NettCorpSolutions Backend
 
+Documentação Geral do Projeto
+[**nettcorpsolutionsdocs**](https://github.com/NettCorpSolutions/nettcorpsolutions-docs)
+
 Este projeto é a API backend para o NettCorpSolutions, construída com Node.js e Express, utilizando MongoDB como banco de dados.
 
 ## Tecnologias Utilizadas
